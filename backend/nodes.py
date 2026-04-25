@@ -47,10 +47,17 @@ def mask_pii_node(state: SARState) -> dict:
         data=f"Masked {len(pii_mapping)} PII entities: {list(pii_mapping.keys())}",
     )
 
+    equilibrium_audit = state.get("equilibrium_audit_log", []) + [{
+        "step": "mask_pii",
+        "action": "PII masked using PrivacyGuard",
+        "evidence": f"Masked {len(pii_mapping)} PII entities: {list(pii_mapping.keys())}"
+    }]
+
     return {
         "masked_data": masked_data,
         "pii_mapping": pii_mapping,
         "audit_log": audit,
+        "equilibrium_audit_log": equilibrium_audit,
     }
 
 
@@ -100,9 +107,16 @@ def router_node(state: SARState) -> dict:
         data=f"System prompt: {ROUTER_SYSTEM[:200]}... | Input keys: alert_reason, transactions, analyst_notes",
     )
 
+    equilibrium_audit = state.get("equilibrium_audit_log", []) + [{
+        "step": "router",
+        "action": f"Alert classified as: {typology}",
+        "evidence": f"Alert reason: {state['masked_data'].get('alert_reason', 'N/A')}, Risk score: {state['masked_data'].get('initial_risk_score', 'N/A')}"
+    }]
+
     return {
         "detected_typology": typology,
         "audit_log": audit,
+        "equilibrium_audit_log": equilibrium_audit,
     }
 
 
@@ -141,9 +155,16 @@ def typology_node(state: SARState) -> dict:
         data=f"Analysis length: {len(analysis)} chars | System prompt: typology analysis template",
     )
 
+    equilibrium_audit = state.get("equilibrium_audit_log", []) + [{
+        "step": "typology_analysis",
+        "action": f"Deep analysis completed for typology: {state['detected_typology']}",
+        "evidence": f"Analysis length: {len(analysis)} chars | Typology: {state['detected_typology']}"
+    }]
+
     return {
         "typology_analysis": analysis,
         "audit_log": audit,
+        "equilibrium_audit_log": equilibrium_audit,
     }
 
 
@@ -190,9 +211,16 @@ def narrative_node(state: SARState) -> dict:
         data=f"Draft length: {len(draft)} chars | Used masked placeholders only",
     )
 
+    equilibrium_audit = state.get("equilibrium_audit_log", []) + [{
+        "step": "narrative_drafting",
+        "action": "FinCEN SAR narrative drafted (masked)",
+        "evidence": f"Draft length: {len(draft)} chars | Typology: {state['detected_typology']} | Used masked placeholders only"
+    }]
+
     return {
         "draft_sar_masked": draft,
         "audit_log": audit,
+        "equilibrium_audit_log": equilibrium_audit,
     }
 
 
@@ -248,9 +276,16 @@ def compliance_judge_node(state: SARState) -> dict:
         data=f"Full judge response: {response[:500]}",
     )
 
+    equilibrium_audit = state.get("equilibrium_audit_log", []) + [{
+        "step": "compliance_judge",
+        "action": f"SAR graded: {score}/10",
+        "evidence": f"Full judge response: {response[:500]}"
+    }]
+
     return {
         "compliance_score": score,
         "audit_log": audit,
+        "equilibrium_audit_log": equilibrium_audit,
     }
 
 
@@ -272,7 +307,14 @@ def unmask_node(state: SARState) -> dict:
         data=f"Replaced {len(state['pii_mapping'])} placeholders with original values",
     )
 
+    equilibrium_audit = state.get("equilibrium_audit_log", []) + [{
+        "step": "unmask_pii",
+        "action": "PII restored in final SAR narrative",
+        "evidence": f"Replaced {len(state['pii_mapping'])} placeholders with original values"
+    }]
+
     return {
         "final_sar_clean": final_clean,
         "audit_log": audit,
+        "equilibrium_audit_log": equilibrium_audit,
     }

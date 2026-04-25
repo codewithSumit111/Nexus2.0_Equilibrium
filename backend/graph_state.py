@@ -33,3 +33,4 @@ class SARState(TypedDict):
 
     # ── Glass-Box Audit Trail ──
     audit_log: list               # list of {"step": str, "action": str, "data": str}
+    equilibrium_audit_log: list   # list of {"step": str, "action": str, "evidence": str}

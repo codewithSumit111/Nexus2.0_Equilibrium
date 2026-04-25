@@ -12,7 +12,7 @@ load_dotenv()
 
 # ── Configuration ──
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20240620-v1:0")
 MAX_TOKENS = int(os.getenv("BEDROCK_MAX_TOKENS", "4096"))
 
 # Lazy-initialised client (created on first call)

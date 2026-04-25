@@ -74,6 +74,7 @@ def run_pipeline(case_id: str, raw_alert_data: dict) -> SARState:
         "final_sar_clean": "",
         "compliance_score": 0,
         "audit_log": [],
+        "equilibrium_audit_log": [],
     }
 
     result = sar_pipeline.invoke(initial_state)

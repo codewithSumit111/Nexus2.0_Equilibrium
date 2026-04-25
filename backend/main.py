@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db, insert_case, update_case, get_case, get_all_cases
-from models import AlertSubmission, SARResult, CaseSummary
+from models import AlertSubmission, SARResult, CaseSummary, EquilibriumAuditLogEntry
 from sample_data import get_sample_alert
 from workflow import run_pipeline
 
@@ -109,6 +109,59 @@ def generate_sar(submission: AlertSubmission):
 
     except Exception as e:
         # Log the error and mark the case as failed
+        error_msg = f"{type(e).__name__}: {str(e)}"
+        print(f"[NEXUS ERROR] Pipeline failed for {submission.case_id}: {error_msg}")
+        traceback.print_exc()
+        update_case(
+            submission.case_id,
+            status="failed",
+            audit_log=[{"step": "pipeline_error", "action": "Pipeline failed", "data": error_msg}],
+        )
+        raise HTTPException(status_code=500, detail=f"Pipeline failed: {error_msg}")
+
+
+@app.post("/nexus/v2/generate-sar")
+def generate_sar_v2(submission: AlertSubmission):
+    """
+    Submit an alert to the full LangGraph SAR generation pipeline (v2).
+    Returns both equilibrium_draft and equilibrium_audit_log.
+    """
+    existing = get_case(submission.case_id)
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Case {submission.case_id} already exists. Use GET /api/cases/{{case_id}} to retrieve it.",
+        )
+
+    insert_case(submission.case_id, submission.alert_data)
+    update_case(submission.case_id, status="processing")
+
+    try:
+        result = run_pipeline(submission.case_id, submission.alert_data)
+
+        update_case(
+            submission.case_id,
+            masked_data=result["masked_data"],
+            pii_mapping=result["pii_mapping"],
+            detected_typology=result["detected_typology"],
+            typology_analysis=result["typology_analysis"],
+            draft_sar_masked=result["draft_sar_masked"],
+            final_sar_clean=result["final_sar_clean"],
+            compliance_score=result["compliance_score"],
+            audit_log=result["audit_log"],
+            status="completed",
+        )
+
+        return {
+            "case_id": result["case_id"],
+            "equilibrium_draft": result["final_sar_clean"],
+            "equilibrium_audit_log": result.get("equilibrium_audit_log", []),
+            "detected_typology": result["detected_typology"],
+            "compliance_score": result["compliance_score"],
+            "status": "completed",
+        }
+
+    except Exception as e:
         error_msg = f"{type(e).__name__}: {str(e)}"
         print(f"[NEXUS ERROR] Pipeline failed for {submission.case_id}: {error_msg}")
         traceback.print_exc()

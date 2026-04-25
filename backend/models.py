@@ -23,6 +23,13 @@ class AuditLogEntry(BaseModel):
     data: str  # stringified for safety
 
 
+class EquilibriumAuditLogEntry(BaseModel):
+    """Single entry in the Equilibrium audit trail."""
+    step: str
+    action: str
+    evidence: str
+
+
 class SARResult(BaseModel):
     """Full result returned after the LangGraph pipeline completes."""
     case_id: str
