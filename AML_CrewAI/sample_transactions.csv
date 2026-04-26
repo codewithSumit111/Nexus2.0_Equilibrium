@@ -1,0 +1,5 @@
+member_id,transaction_id,transaction_count,transaction_amount,account_dormancy_days,high_risk_geographic_transfers,crypto_involvement
+MEM_8932,TXN001,3,250.0,5,0,0
+MEM_9912,TXN002,18,7500.0,120,2,1
+MEM_1034,TXN003,7,900.0,30,0,0
+MEM_6633,TXN004,35,15000.0,250,4,1
